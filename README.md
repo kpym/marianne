@@ -40,7 +40,7 @@ Paramètres disponibles:
   -eol string
         Le passage à la ligne, en plus du EOL standard. (default "\\")
   -formats string
-        Les format parmi SVG, PDF, PNG, GIF et JPG. (default "SVG")
+        Les formats parmi SVG, PDF, PNG, GIF et JPG. (default "SVG")
   -hauteurs string
         Les hauteurs pour les logos en PNG et JPG. (default "100,300,700")
   -institution string

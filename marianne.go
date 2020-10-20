@@ -166,7 +166,7 @@ func main() {
 	direction = flag.String("direction", "", "Intitulé de de direction, service ou délégations interministérielles.")
 	eol = flag.String("eol", "\\", "Le passage à la ligne, en plus du EOL standard.")
 	hauteurs = flag.String("hauteurs", "100,300,700", "Les hauteurs pour les logos en PNG et JPG.")
-	formats = flag.String("formats", "SVG", "Les format parmi SVG, PDF, PNG, GIF et JPG.")
+	formats = flag.String("formats", "SVG", "Les formats parmi SVG, PDF, PNG, GIF et JPG.")
 	avecMarges = flag.Bool("avec-marges", false, "Avec zone de protection autour du logo. Ce paramètre est compatible avec -sans-marges.")
 	sansMarges = flag.Bool("sans-marges", false, "Sans zone de protection autour du logo. Ce paramètre est compatible avec -avec-marges.")
 	pourSignature = flag.Bool("pour-signature", false, "Le logo est destiné à une signature mail.")
