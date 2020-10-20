@@ -7,7 +7,7 @@ Ce petit logiciel génère le logo des administrations en respectant la charte g
 
 ### Version compilée
 
-Il suffit de télécharger la version pour votre os à partir des Realases
+Il suffit de télécharger la version pour votre os à partir des [Realases](https://github.com/kpym/marianne/releases).
 
 ### Compilation
 
