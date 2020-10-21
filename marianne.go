@@ -85,8 +85,10 @@ func stoi(h string) []int {
 func drawText(ctx *canvas.Context, fontFamily *canvas.FontFamily, txt string, xPos, yPos, size, step float64) (float64, float64) {
 	// la coordonnées x maximale (à retourner)
 	var w float64
-	// constante expérimentale pour voir la bonne taille des lettres
-	const fontScale = 4.050632911392405
+	// La lettre A fait 70% de la taille de la police
+	// et la conversion mm -> pt est 72/25.4
+	// donc la constante par laquelle on multiplie la taille de la police en pt pour obtenir la taille de A en mm est
+	const fontScale = 72 / 25.4 * 100 / 70
 
 	// préparation du texte
 	txt = strings.ReplaceAll(txt, *eol, "\n")
@@ -174,7 +176,7 @@ func onWhite(c *canvas.Canvas) *canvas.Canvas {
 	return cn
 }
 
-// les 16 couleurs du logo pour PNG et GIF
+// les 16 couleurs du logo pour PNG et GIF (non utilisé pour le moment)
 var MariannePalette16 = color.Palette{
 	color.RGBA{0x0c, 0x0c, 0x0c, 0xff},
 	color.RGBA{0xff, 0xff, 0xff, 0xff},
@@ -194,14 +196,26 @@ var MariannePalette16 = color.Palette{
 	color.RGBA{0xfa, 0xfa, 0xfa, 0xff},
 }
 
+// les 8 couleurs du logo pour PNG et GIF
+var MariannePalette8 = color.Palette{
+	color.NRGBA{0xff, 0xff, 0xff, 0xff}, // blanc
+	color.NRGBA{0x05, 0x05, 0x05, 0xff}, // noir
+	color.NRGBA{0x80, 0x80, 0x82, 0xff}, // gris
+	color.NRGBA{0xb3, 0xb2, 0xb3, 0xff}, // gris
+	color.NRGBA{0x00, 0x00, 0x91, 0xff}, // bleu
+	color.NRGBA{0xe1, 0x00, 0x0f, 0xff}, // rouge
+	color.NRGBA{0xdb, 0xdb, 0xdb, 0xff}, // gris
+	color.NRGBA{0xea, 0x65, 0x67, 0xff}, // rouge pale
+}
+
 type MarianneQuantizer struct {
 }
 
 func (q *MarianneQuantizer) Quantize(p color.Palette, m image.Image) color.Palette {
-	return MariannePalette16
+	return MariannePalette8
 }
 
-// transforme les chemins du canevas en image 16 couleurs
+// transforme les chemins du canevas en image 8 ou 16 couleurs
 func CanvasToIndexedImg(c *canvas.Canvas, h int, p color.Palette) image.Image {
 	img := image.NewPaletted(image.Rect(0, 0, int(c.W*float64(h)/c.H+0.5), h), p)
 	c.Render(rasterizer.New(img, canvas.DPMM(float64(h)/c.H)))
@@ -247,38 +261,47 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 		log("EPS fait.\n")
 	}
 
-	heights := stoi(*hauteurs)
-	for i := 0; i < len(heights); i++ {
-		log("Image de hauteur ", heights[i], ".")
-		// la base du nom (sans l'extension)
-		name := fmt.Sprintf("%s%s_%d.", *nom, zp, heights[i])
+	doPNG := strings.Contains(formats, "png")
+	doGIF := strings.Contains(formats, "gif")
+	doJPG := strings.Contains(formats, "jpg") || strings.Contains(formats, "jpeg")
 
-		// Création PNG et GIF (en 16 couleurs)
-		if strings.Contains(formats, "png") || strings.Contains(formats, "gif") {
-			img := CanvasToIndexedImg(c, heights[i], MariannePalette16)
-			if strings.Contains(formats, "png") {
-				dstFile, err := os.Create(name + "png")
-				check(err)
-				defer dstFile.Close()
-				png.Encode(dstFile, img)
-				log("..png.")
+	if doPNG || doGIF || doJPG {
+		// les hauteurs des images
+		heights := stoi(*hauteurs)
+
+		// pour chaque hauteur ...
+		for i := 0; i < len(heights); i++ {
+			log("Image de hauteur ", heights[i], ".")
+			// la base du nom (sans l'extension)
+			name := fmt.Sprintf("%s%s_%d.", *nom, zp, heights[i])
+
+			// Création PNG et GIF (en 8 couleurs)
+			if doPNG || doGIF {
+				img := CanvasToIndexedImg(c, heights[i], MariannePalette8)
+				if doPNG {
+					dstFile, err := os.Create(name + "png")
+					check(err)
+					defer dstFile.Close()
+					png.Encode(dstFile, img)
+					log("..png.")
+				}
+				if doGIF {
+					dstFile, err := os.Create(name + "gif")
+					check(err)
+					defer dstFile.Close()
+					gif.Encode(dstFile, img, nil)
+					log("..gif.")
+				}
 			}
-			if strings.Contains(formats, "gif") {
-				dstFile, err := os.Create(name + "gif")
-				check(err)
-				defer dstFile.Close()
-				gif.Encode(dstFile, img, nil)
-				log("..gif.")
+
+			// création JPG
+			if doJPG {
+				c.WriteFile(name+"jpg", rasterizer.JPGWriter(canvas.DPMM(float64(heights[i])/c.H), nil))
+				log("..jpg.")
 			}
-		}
 
-		// création JPG
-		if strings.Contains(formats, "jpg") || strings.Contains(formats, "jpeg") {
-			c.WriteFile(name+"jpg", rasterizer.JPGWriter(canvas.DPMM(float64(heights[i])/c.H), nil))
-			log("..jpg.")
+			log(" Fait.\n")
 		}
-
-		log(" Fait.\n")
 	}
 
 }
