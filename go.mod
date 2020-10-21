@@ -6,3 +6,5 @@ require (
 	github.com/markbates/pkger v0.17.1
 	github.com/tdewolff/canvas v0.0.0-20201001125124-22ab9a5a4f3e
 )
+
+replace github.com/tdewolff/canvas => github.com/kpym/canvas v0.0.0-20201021144745-38347796a493

@@ -41,6 +41,10 @@ github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQL
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.4.1/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=
 github.com/klauspost/cpuid v1.2.0/go.mod h1:Pj4uuM528wm8OyEC2QMXAi2YiTZ96dNQPGgoMS4s3ek=
+github.com/kpym/canvas v0.0.0-20201001125124-22ab9a5a4f3e h1:sKFw/UvyEPS+ZYbZHEEMudYWRAIqAK0VwNxu13b2Uv4=
+github.com/kpym/canvas v0.0.0-20201001125124-22ab9a5a4f3e/go.mod h1:dsbLWOfWSGQTCtl+cqbM9/28QV3KrrfXCnvMZcJEz4s=
+github.com/kpym/canvas v0.0.0-20201021144745-38347796a493 h1:ip7jdnmZzc0DWVK9BL50pgGb6gJ8vkS8rm3DQ74UTwg=
+github.com/kpym/canvas v0.0.0-20201021144745-38347796a493/go.mod h1:dsbLWOfWSGQTCtl+cqbM9/28QV3KrrfXCnvMZcJEz4s=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=

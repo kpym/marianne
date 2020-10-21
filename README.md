@@ -63,9 +63,10 @@ Création du logo ...fait.
 
 Enregistrement avec marges :
 SVG fait.
-PNG de hauteur ...100...300...700...fait.
+Image de hauteur 100...png. Fait.
+Image de hauteur 300...png. Fait.
+Image de hauteur 700...png. Fait.
 
 $ ls *.svg *.png
 logo_inst.svg logo_inst_100.png logo_inst_300.png logo_inst_700.png
-
 ```
