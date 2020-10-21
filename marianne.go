@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"image"
+	"image/color"
+	"image/gif"
+	"image/png"
 	"io/ioutil"
 	"math"
 	"os"
@@ -159,6 +163,126 @@ func draw(ctx *canvas.Context, institution, direction string) {
 	}
 }
 
+// le logo est mis sur fond blanc
+func onWhite(c *canvas.Canvas) *canvas.Canvas {
+	cn := canvas.New(c.W, c.H)
+	ctx := canvas.NewContext(cn)
+	ctx.SetFillColor(canvas.White)
+	ctx.DrawPath(0, 0, canvas.Rectangle(math.Ceil(c.W), math.Ceil(c.H)))
+	c.Render(cn)
+
+	return cn
+}
+
+// les 16 couleurs du logo pour PNG et GIF
+var MariannePalette16 = color.Palette{
+	color.RGBA{0x0c, 0x0c, 0x0c, 0xff},
+	color.RGBA{0xff, 0xff, 0xff, 0xff},
+	color.RGBA{0x79, 0x79, 0x7c, 0xff},
+	color.RGBA{0xa3, 0xa3, 0xa4, 0xff},
+	color.RGBA{0x09, 0x09, 0x94, 0xff},
+	color.RGBA{0xd7, 0xd7, 0xd9, 0xff},
+	color.RGBA{0xe1, 0x04, 0x11, 0xff},
+	color.RGBA{0xf2, 0xf2, 0xf2, 0xff},
+	color.RGBA{0xf9, 0xcb, 0xce, 0xff},
+	color.RGBA{0xc1, 0xc0, 0xc1, 0xff},
+	color.RGBA{0x47, 0x47, 0x47, 0xff},
+	color.RGBA{0xed, 0x5f, 0x70, 0xff},
+	color.RGBA{0xfb, 0xdd, 0xdf, 0xff},
+	color.RGBA{0xf0, 0xf0, 0xf9, 0xff},
+	color.RGBA{0xe7, 0xe7, 0xe7, 0xff},
+	color.RGBA{0xfa, 0xfa, 0xfa, 0xff},
+}
+
+type MarianneQuantizer struct {
+}
+
+func (q *MarianneQuantizer) Quantize(p color.Palette, m image.Image) color.Palette {
+	return MariannePalette16
+}
+
+// transforme les chemins du canevas en image 16 couleurs
+func CanvasToIndexedImg(c *canvas.Canvas, h int, p color.Palette) image.Image {
+	img := image.NewPaletted(image.Rect(0, 0, int(c.W*float64(h)/c.H+0.5), h), p)
+	c.Render(rasterizer.New(img, canvas.DPMM(float64(h)/c.H)))
+	return img
+}
+
+// Créer les fichiers : svg, pdf, eps, png, gif, jpg
+// - c : le canvas contenant l'image
+// - zp : chaîne "sans zone de protection" a rajouter au nom ou pas
+func writeImages(c *canvas.Canvas, zp, formats string) {
+	var name string
+
+	// Création du SVG
+	if strings.Contains(formats, "svg") {
+		name = fmt.Sprintf("%s%s.svg", *nom, zp)
+		// au lieu de fichier on utilise un Buffer
+		var memoryFile = new(bytes.Buffer)
+		err = svg.Writer(memoryFile, c)
+		check(err)
+		var buf = memoryFile.Bytes()
+		// et on supprime 'width' et 'height'
+		reWidth := regexp.MustCompile(`(?m)(width\s*=\s*\"[^"]*\"\s*)`)
+		buf = reWidth.ReplaceAll(buf, []byte{})
+		reHeight := regexp.MustCompile(`(?m)(height\s*=\s*\"[^"]*\"\s*)`)
+		buf = reHeight.ReplaceAll(buf, []byte{})
+		// et on enregistre finalement
+		err = ioutil.WriteFile(name, buf, 0644)
+		check(err)
+		log("SVG fait.\n")
+	}
+
+	// Création du PDF
+	if strings.Contains(formats, "pdf") {
+		name := fmt.Sprintf("%s%s.pdf", *nom, zp)
+		c.WriteFile(name, pdf.Writer)
+		log("PDF fait.\n")
+	}
+
+	// Création du EPS
+	if strings.Contains(formats, "eps") {
+		name := fmt.Sprintf("%s%s.eps", *nom, zp)
+		c.WriteFile(name, eps.Writer)
+		log("EPS fait.\n")
+	}
+
+	heights := stoi(*hauteurs)
+	for i := 0; i < len(heights); i++ {
+		log("Image de hauteur ", heights[i], ".")
+		// la base du nom (sans l'extension)
+		name := fmt.Sprintf("%s%s_%d.", *nom, zp, heights[i])
+
+		// Création PNG et GIF (en 16 couleurs)
+		if strings.Contains(formats, "png") || strings.Contains(formats, "gif") {
+			img := CanvasToIndexedImg(c, heights[i], MariannePalette16)
+			if strings.Contains(formats, "png") {
+				dstFile, err := os.Create(name + "png")
+				check(err)
+				defer dstFile.Close()
+				png.Encode(dstFile, img)
+				log("..png.")
+			}
+			if strings.Contains(formats, "gif") {
+				dstFile, err := os.Create(name + "gif")
+				check(err)
+				defer dstFile.Close()
+				gif.Encode(dstFile, img, nil)
+				log("..gif.")
+			}
+		}
+
+		// création JPG
+		if strings.Contains(formats, "jpg") || strings.Contains(formats, "jpeg") {
+			c.WriteFile(name+"jpg", rasterizer.JPGWriter(canvas.DPMM(float64(heights[i])/c.H), nil))
+			log("..jpg.")
+		}
+
+		log(" Fait.\n")
+	}
+
+}
+
 func main() {
 	// déclare les flags
 	nom = flag.String("nom", "logo", "Le nom du fichier.")
@@ -205,89 +329,5 @@ func main() {
 		c.Fit(x)
 		log("\nEnregistrement avec marges :\n")
 		writeImages(onWhite(c), "", strings.ToLower(*formats))
-	}
-}
-
-func onWhite(c *canvas.Canvas) *canvas.Canvas {
-	cn := canvas.New(c.W, c.H)
-	ctx := canvas.NewContext(cn)
-	ctx.SetFillColor(canvas.White)
-	ctx.DrawPath(0, 0, canvas.Rectangle(math.Ceil(c.W), math.Ceil(c.H)))
-	c.Render(cn)
-
-	return cn
-}
-
-// Créer les fichiers : svg, pdf, png, ...
-// - c : le canvas contenant l'image
-// - zp : chaîne "sans zone de protection" a rajouter au nom ou pas
-func writeImages(c *canvas.Canvas, zp, formats string) {
-	var name string
-
-	// Création du SVG
-	if strings.Contains(formats, "svg") {
-		name = fmt.Sprintf("%s%s.svg", *nom, zp)
-		// au lieu de fichier on utilise un Buffer
-		var memoryFile = new(bytes.Buffer)
-		err = svg.Writer(memoryFile, c)
-		check(err)
-		var buf = memoryFile.Bytes()
-		// et on supprime 'width' et 'height'
-		reWidth := regexp.MustCompile(`(?m)(width\s*=\s*\"[^"]*\"\s*)`)
-		buf = reWidth.ReplaceAll(buf, []byte{})
-		reHeight := regexp.MustCompile(`(?m)(height\s*=\s*\"[^"]*\"\s*)`)
-		buf = reHeight.ReplaceAll(buf, []byte{})
-		// et on enregistre finalement
-		err = ioutil.WriteFile(name, buf, 0644)
-		check(err)
-		log("SVG fait.\n")
-	}
-
-	// Création du PDF
-	if strings.Contains(formats, "pdf") {
-		name := fmt.Sprintf("%s%s.pdf", *nom, zp)
-		c.WriteFile(name, pdf.Writer)
-		log("PDF fait.\n")
-	}
-
-	// Création du EPS
-	if strings.Contains(formats, "eps") {
-		name := fmt.Sprintf("%s%s.eps", *nom, zp)
-		c.WriteFile(name, eps.Writer)
-		log("EPS fait.\n")
-	}
-
-	heights := stoi(*hauteurs)
-	// création du PNG
-	if strings.Contains(formats, "png") {
-		log("PNG de hauteur ...")
-		for i := 0; i < len(heights); i++ {
-			name := fmt.Sprintf("%s%s_%d.png", *nom, zp, heights[i])
-			c.WriteFile(name, rasterizer.PNGWriter(canvas.DPMM(float64(heights[i])/c.H)))
-			log(heights[i], "...")
-		}
-		log("fait.\n")
-	}
-
-	// création du JPG
-	if strings.Contains(formats, "jpg") || strings.Contains(formats, "jpeg") {
-		log("JPG de hauteur ...")
-		for i := 0; i < len(heights); i++ {
-			name := fmt.Sprintf("%s%s_%d.jpg", *nom, zp, heights[i])
-			c.WriteFile(name, rasterizer.JPGWriter(canvas.DPMM(float64(heights[i])/c.H), nil))
-			log(heights[i], "...")
-		}
-		log("fait.\n")
-	}
-
-	// création du JPG
-	if strings.Contains(formats, "gif") {
-		log("GIF de hauteur ...")
-		for i := 0; i < len(heights); i++ {
-			name := fmt.Sprintf("%s%s_%d.gif", *nom, zp, heights[i])
-			c.WriteFile(name, rasterizer.GIFWriter(canvas.DPMM(float64(heights[i])/c.H), nil))
-			log(heights[i], "...")
-		}
-		log("fait.\n")
 	}
 }
