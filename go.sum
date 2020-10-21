@@ -69,6 +69,8 @@ github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJy
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/tdewolff/canvas v0.0.0-20201001125124-22ab9a5a4f3e h1:jMbro63dc+c9hHo/PLshiZZD2zVsuggS7S8aMx6k4uY=
 github.com/tdewolff/canvas v0.0.0-20201001125124-22ab9a5a4f3e/go.mod h1:dsbLWOfWSGQTCtl+cqbM9/28QV3KrrfXCnvMZcJEz4s=
+github.com/tdewolff/canvas v0.0.0-20201021153214-d9228b138ea8 h1:HwqyL7zpQ1NnhM1zDelKiZNEs4CRNKyR89NEO07qSW4=
+github.com/tdewolff/canvas v0.0.0-20201021153214-d9228b138ea8/go.mod h1:dsbLWOfWSGQTCtl+cqbM9/28QV3KrrfXCnvMZcJEz4s=
 github.com/tdewolff/minify/v2 v2.9.5 h1:+fHvqLencVdv14B+zgxQGhetF9qXl/nRTN/1mcyQwpM=
 github.com/tdewolff/minify/v2 v2.9.5/go.mod h1:jshtBj/uUJH6JX1fuxTLnnHOA1RVJhF5MM+leJzDKb4=
 github.com/tdewolff/parse/v2 v2.5.3 h1:fnPIstKgEfxd3+wwHnH73sAYydsR0o/jYhcQ6c5PkrA=
