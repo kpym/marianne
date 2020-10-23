@@ -306,6 +306,27 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 
 }
 
+// Affiche l'aide d'utilisation
+// C'est un peut plus compliqué que ce que ça devrait être
+// car on doit remplacer "default" avec "par défaut"
+// voir : https://github.com/golang/go/issues/42124
+func Aide() {
+
+	fmt.Fprintf(os.Stderr, "marianne (version: %s)\n\n", version)
+	fmt.Fprintf(os.Stderr, "Ce programme génère le logo de l'institution.\nParamètres disponibles:\n\n")
+
+	// Remplace "default" avec "par défaut" dans `flag.PrintDefaults`
+	var buf = new(bytes.Buffer)
+	// on redirige la sortie vers buf et on affiche les flags dedans
+	flag.CommandLine.SetOutput(buf)
+	defer flag.CommandLine.SetOutput(os.Stderr)
+	flag.PrintDefaults()
+	// on remplace "default" avec "par défaut" et on affiche le résultats dans la console
+	os.Stderr.Write(bytes.Replace(buf.Bytes(), []byte("default"), []byte("par défaut"), -1))
+
+	fmt.Fprintf(os.Stderr, "\n")
+}
+
 func main() {
 	// déclare les flags
 	nom = flag.String("nom", "logo", "Le nom du fichier.")
@@ -319,12 +340,7 @@ func main() {
 	pourSignature = flag.Bool("pour-signature", false, "Le logo est destiné à une signature mail.")
 	silence = flag.Bool("silence", false, "N'imprime rien.")
 	// Message d'aide
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "marianne (version: %s)\n\n", version)
-		fmt.Fprintf(os.Stderr, "Ce programme génère le logo de l'institution.\nParamètres disponibles:\n\n")
-		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\n")
-	}
+	flag.Usage = Aide
 	// récupère les flags
 	flag.Parse()
 	// au moins une des versions doit être présente (avec marges par défaut)
