@@ -33,32 +33,24 @@ marianne (version: --)
 Ce programme génère le logo de l'institution.
 Paramètres disponibles:
 
-  -avec-marges
-        Avec zone de protection autour du logo. Ce paramètre est compatible avec -sans-marges.
-  -direction string
-        Intitulé de de direction, service ou délégations interministérielles.
-  -eol string
-        Le passage à la ligne, en plus du EOL standard. (default "\\")
-  -formats string
-        Les formats parmi SVG, PDF, PNG, GIF et JPG. (default "SVG")
-  -hauteurs string
-        Les hauteurs pour les logos en PNG et JPG. (default "100,300,700")
-  -institution string
-        Le nom du ministère, ambassade, ... (default "RÉPUBLIQUE\\FRANÇAISE")
-  -nom string
-        Le nom du fichier. (default "logo")
-  -pour-signature
-        Le logo est destiné à une signature mail.
-  -sans-marges
-        Sans zone de protection autour du logo. Ce paramètre est compatible avec -avec-marges.
-  -silence
-        N'imprime rien.
+  -o, --nom-du-logo          Le nom du logo = le début des noms des fichiers générés. (par défaut "logo")
+  -i, --institution          Le nom du ministère, ambassade... (par défaut "RÉPUBLIQUE\\FRANÇAISE")
+  -d, --direction            Intitulé de direction, service ou délégation interministérielles.
+  -f, --format               Le(s) format(s) parmi SVG, PDF, EPS, PNG, GIF et JPG. (par défaut [SVG])
+  -t, --hauteur              La (ou les) hauteur(s) pour les logos en PNG, GIF et JPG. (par défaut [100,300,700])
+  -M, --avec-marges          Avec zone de protection autour du logo. Ce paramètre est compatible avec -sans-marges.
+  -m, --sans-marges          Sans zone de protection autour du logo ('_szp' est rajouté aux noms des fichiers).
+  -g, --pour-signature       Le logo est destiné à une signature mail.
+      --eol                  Le passage à la ligne, en plus du EOL standard. (par défaut "\\")
+  -q, --silence              N'imprime rien.
+  -h, --aide                 Imprime ce message d'aide.
+
 ```
 
 ### Exemple
 
 ```shell
-$ ./marianne -institution "L'institution" -direction "Intitulé de la\\direction" -formats "svg png" -nom "logo_inst"
+$ ./marianne -i "L'institution" -d "Intitulé de la\\direction" -f svg -f png -o "logo_inst"
 Création du logo ...fait.
 
 Enregistrement avec marges :
