@@ -289,42 +289,16 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 
 }
 
-var traductions = map[string]string{
-	"default": "par défaut",
-	"strings": "       ",
-	"string":  "      ",
-	"ints":    "    ",
-	// "bad flag syntax:":        "mauvaise syntaxe du paramètre :",
-	// "unknown flag:":           "paramètre inconnu :",
-	// "unknown shorthand flag:": "paramètre court inconnu :",
-	// " in ":                    " dans ",
-	// "flag needs an argument:": "Le paramètre nécessite d'un argument :",
-}
-
 // Affiche l'aide d'utilisation
 // C'est un peut plus compliqué que ce que ça devrait être
 // car on doit remplacer "default" avec "par défaut"
 // voir : https://github.com/golang/go/issues/42124
 func Aide() {
-
-	fmt.Fprintf(os.Stderr, "marianne (version: %s)\n\n", version)
-	fmt.Fprintf(os.Stderr, "Ce programme génère le logo de l'institution.\nParamètres disponibles:\n\n")
-
-	// Remplace "default" avec "par défaut" dans `flag.PrintDefaults`
-	var buf = new(bytes.Buffer)
-	// on redirige la sortie vers buf et on affiche les flags dedans
-	flag.CommandLine.SetOutput(buf)
-	defer flag.CommandLine.SetOutput(os.Stderr)
+	var out = flag.CommandLine.Output()
+	fmt.Fprintf(out, "marianne (version: %s)\n\n", version)
+	fmt.Fprintf(out, "Ce programme génère le logo de l'institution.\nParamètres disponibles:\n\n")
 	flag.PrintDefaults()
-	// le message avant les ajustements
-	msg := string(buf.Bytes())
-	// traduction en français
-	for from, to := range traductions {
-		msg = strings.ReplaceAll(msg, from, to)
-	}
-	// on affiche finalement le message d'aide
-	fmt.Fprintf(os.Stderr, msg)
-	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(out, "\n")
 }
 
 func main() {
@@ -342,13 +316,21 @@ func main() {
 	flag.BoolVarP(&aide, "aide", "h", false, "Imprime ce message d'aide.")
 	// Message d'aide
 	flag.CommandLine.SortFlags = false
+	flag.CommandLine.SetOutput(FrenchTranslator{flag.CommandLine.Output()})
 	flag.Usage = Aide
+	flag.CommandLine.Init("marianne", flag.ContinueOnError)
+
 	// récupère les flags
-	flag.Parse()
+	err = flag.CommandLine.Parse(os.Args[1:])
 	// affiche l'aide si demandé
-	if aide {
+	if aide || err != nil {
 		flag.Usage()
-		os.Exit(0)
+		if err != nil {
+			fmt.Fprintln(flag.CommandLine.Output(), "ERREUR : ", err)
+			os.Exit(2)
+		} else {
+			os.Exit(0)
+		}
 	}
 	// au moins une des versions doit être présente (avec marges par défaut)
 	if !sansMarges {
