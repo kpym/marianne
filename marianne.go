@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"image"
 	"image/color"
@@ -12,8 +11,9 @@ import (
 	"math"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
+
+	flag "github.com/spf13/pflag"
 
 	"github.com/markbates/pkger"
 	"github.com/tdewolff/canvas"
@@ -34,16 +34,17 @@ var (
 
 // les flags (pour la description voir dans la fonction main)
 var (
-	nom           *string
-	institution   *string
-	direction     *string
-	eol           *string
-	hauteurs      *string
-	formats       *string
-	avecMarges    *bool
-	sansMarges    *bool
-	pourSignature *bool
-	silence       *bool
+	nom           string
+	institution   string
+	direction     string
+	eol           string
+	hauteurs      []int
+	formats       []string
+	avecMarges    bool
+	sansMarges    bool
+	pourSignature bool
+	silence       bool
+	aide          bool
 )
 
 // panique en cas d'erreur
@@ -56,23 +57,6 @@ func check(e error) {
 // Imprimer des messages si pas quiet
 var log = func(msg ...interface{}) {
 	fmt.Fprint(os.Stderr, msg...)
-}
-
-// conversion des hauteurs en liste d'entiers
-func stoi(h string) []int {
-	var n int
-
-	r := make([]int, 0, 7)
-	ah := strings.Split(h, ",")
-	for i := 0; i < len(ah); i++ {
-		n, err = strconv.Atoi(ah[i])
-		check(err)
-		if n > 0 {
-			r = append(r, n)
-		}
-	}
-
-	return r
 }
 
 // affiche un texte multilingue dans le context ctx
@@ -91,7 +75,7 @@ func drawText(ctx *canvas.Context, fontFamily *canvas.FontFamily, txt string, xP
 	const fontScale = 72 / 25.4 * 100 / 70
 
 	// préparation du texte
-	txt = strings.ReplaceAll(txt, *eol, "\n")
+	txt = strings.ReplaceAll(txt, eol, "\n")
 	ta := strings.Split(txt, "\n")
 
 	// affichage du texte
@@ -152,7 +136,7 @@ func draw(ctx *canvas.Context, institution, direction string) {
 	if len(direction) > 0 {
 		// détermine les espacement horizontaux entre le trait vertical et les textes
 		dx1, dx2 := x, x
-		if *pourSignature {
+		if pourSignature {
 			dx1, dx2 = 3*x, x/2
 		}
 		// affiche l'intitulé de la direction
@@ -230,7 +214,7 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 
 	// Création du SVG
 	if strings.Contains(formats, "svg") {
-		name = fmt.Sprintf("%s%s.svg", *nom, zp)
+		name = fmt.Sprintf("%s%s.svg", nom, zp)
 		// au lieu de fichier on utilise un Buffer
 		var memoryFile = new(bytes.Buffer)
 		err = svg.Writer(memoryFile, c)
@@ -249,14 +233,14 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 
 	// Création du PDF
 	if strings.Contains(formats, "pdf") {
-		name := fmt.Sprintf("%s%s.pdf", *nom, zp)
+		name := fmt.Sprintf("%s%s.pdf", nom, zp)
 		c.WriteFile(name, pdf.Writer)
 		log("PDF fait.\n")
 	}
 
 	// Création du EPS
 	if strings.Contains(formats, "eps") {
-		name := fmt.Sprintf("%s%s.eps", *nom, zp)
+		name := fmt.Sprintf("%s%s.eps", nom, zp)
 		c.WriteFile(name, eps.Writer)
 		log("EPS fait.\n")
 	}
@@ -267,17 +251,16 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 
 	if doPNG || doGIF || doJPG {
 		// les hauteurs des images
-		heights := stoi(*hauteurs)
 
 		// pour chaque hauteur ...
-		for i := 0; i < len(heights); i++ {
-			log("Image de hauteur ", heights[i], ".")
+		for i := 0; i < len(hauteurs); i++ {
+			log("Image de hauteur ", hauteurs[i], ".")
 			// la base du nom (sans l'extension)
-			name := fmt.Sprintf("%s%s_%d.", *nom, zp, heights[i])
+			name := fmt.Sprintf("%s%s_%d.", nom, zp, hauteurs[i])
 
 			// Création PNG et GIF (en 8 couleurs)
 			if doPNG || doGIF {
-				img := CanvasToIndexedImg(c, heights[i], MariannePalette8)
+				img := CanvasToIndexedImg(c, hauteurs[i], MariannePalette8)
 				if doPNG {
 					dstFile, err := os.Create(name + "png")
 					check(err)
@@ -296,7 +279,7 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 
 			// création JPG
 			if doJPG {
-				c.WriteFile(name+"jpg", rasterizer.JPGWriter(canvas.DPMM(float64(heights[i])/c.H), nil))
+				c.WriteFile(name+"jpg", rasterizer.JPGWriter(canvas.DPMM(float64(hauteurs[i])/c.H), nil))
 				log("..jpg.")
 			}
 
@@ -304,6 +287,18 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 		}
 	}
 
+}
+
+var traductions = map[string]string{
+	"default": "par défaut",
+	"strings": "       ",
+	"string":  "      ",
+	"ints":    "    ",
+	// "bad flag syntax:":        "mauvaise syntaxe du paramètre :",
+	// "unknown flag:":           "paramètre inconnu :",
+	// "unknown shorthand flag:": "paramètre court inconnu :",
+	// " in ":                    " dans ",
+	// "flag needs an argument:": "Le paramètre nécessite d'un argument :",
 }
 
 // Affiche l'aide d'utilisation
@@ -321,34 +316,48 @@ func Aide() {
 	flag.CommandLine.SetOutput(buf)
 	defer flag.CommandLine.SetOutput(os.Stderr)
 	flag.PrintDefaults()
-	// on remplace "default" avec "par défaut" et on affiche le résultats dans la console
-	os.Stderr.Write(bytes.Replace(buf.Bytes(), []byte("default"), []byte("par défaut"), -1))
-
+	// le message avant les ajustements
+	msg := string(buf.Bytes())
+	// traduction en français
+	for from, to := range traductions {
+		msg = strings.ReplaceAll(msg, from, to)
+	}
+	// on affiche finalement le message d'aide
+	fmt.Fprintf(os.Stderr, msg)
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
 func main() {
 	// déclare les flags
-	nom = flag.String("nom", "logo", "Le nom du fichier.")
-	institution = flag.String("institution", "RÉPUBLIQUE\\FRANÇAISE", "Le nom du ministère, ambassade, ...")
-	direction = flag.String("direction", "", "Intitulé de de direction, service ou délégations interministérielles.")
-	eol = flag.String("eol", "\\", "Le passage à la ligne, en plus du EOL standard.")
-	hauteurs = flag.String("hauteurs", "100,300,700", "Les hauteurs pour les logos en PNG et JPG.")
-	formats = flag.String("formats", "SVG", "Les formats parmi SVG, PDF, PNG, GIF et JPG.")
-	avecMarges = flag.Bool("avec-marges", false, "Avec zone de protection autour du logo. Ce paramètre est compatible avec -sans-marges.")
-	sansMarges = flag.Bool("sans-marges", false, "Sans zone de protection autour du logo. Ce paramètre est compatible avec -avec-marges.")
-	pourSignature = flag.Bool("pour-signature", false, "Le logo est destiné à une signature mail.")
-	silence = flag.Bool("silence", false, "N'imprime rien.")
+	flag.StringVarP(&nom, "nom-du-logo", "o", "logo", "Le nom du logo = le début des noms des fichiers générés.")
+	flag.StringVarP(&institution, "institution", "i", "RÉPUBLIQUE\\FRANÇAISE", "Le nom du ministère, ambassade...")
+	flag.StringVarP(&direction, "direction", "d", "", "Intitulé de direction, service ou délégation interministérielles.")
+	flag.StringSliceVarP(&formats, "format", "f", []string{"SVG"}, "Le(s) format(s) parmi SVG, PDF, EPS, PNG, GIF et JPG.")
+	flag.IntSliceVarP(&hauteurs, "hauteur", "t", []int{100, 300, 700}, "La (ou les) hauteur(s) pour les logos en PNG, GIF et JPG.")
+	flag.BoolVarP(&avecMarges, "avec-marges", "M", false, "Avec zone de protection autour du logo. Ce paramètre est compatible avec -sans-marges.")
+	flag.BoolVarP(&sansMarges, "sans-marges", "m", false, "Sans zone de protection autour du logo ('_szp' est rajouté aux noms des fichiers).")
+	flag.BoolVarP(&pourSignature, "pour-signature", "g", false, "Le logo est destiné à une signature mail.")
+	flag.StringVar(&eol, "eol", "\\", "Le passage à la ligne, en plus du EOL standard.")
+	flag.BoolVarP(&silence, "silence", "q", false, "N'imprime rien.")
+	flag.BoolVarP(&aide, "aide", "h", false, "Imprime ce message d'aide.")
 	// Message d'aide
+	flag.CommandLine.SortFlags = false
 	flag.Usage = Aide
 	// récupère les flags
 	flag.Parse()
-	// au moins une des versions doit être présente (avec marges par défaut)
-	if !*sansMarges {
-		*avecMarges = true
+	// affiche l'aide si demandé
+	if aide {
+		flag.Usage()
+		os.Exit(0)
 	}
+	// au moins une des versions doit être présente (avec marges par défaut)
+	if !sansMarges {
+		avecMarges = true
+	}
+	// normalisation des formats
+	var formatstr = strings.ToLower(strings.Join(formats, ","))
 	// silence ?
-	if *silence {
+	if silence {
 		log = func(msg ...interface{}) {}
 	}
 
@@ -356,17 +365,17 @@ func main() {
 	c := canvas.New(1, 1) // la taille sera ajustée après avec Fit()
 	ctx := canvas.NewContext(c)
 	log("Création du logo ...")
-	draw(ctx, *institution, *direction)
+	draw(ctx, institution, direction)
 	log("fait.\n")
 
-	if *sansMarges {
+	if sansMarges {
 		c.Fit(0.0)
 		log("\nEnregistrement sans marges :\n")
-		writeImages(onWhite(c), "_szp", strings.ToLower(*formats))
+		writeImages(onWhite(c), "_szp", formatstr)
 	}
-	if *avecMarges {
+	if avecMarges {
 		c.Fit(x)
 		log("\nEnregistrement avec marges :\n")
-		writeImages(onWhite(c), "", strings.ToLower(*formats))
+		writeImages(onWhite(c), "", formatstr)
 	}
 }
