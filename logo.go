@@ -16,7 +16,7 @@ var (
 	}
 
 	// les couleur des 3 parties : bleu, gris, rouge
-	logo_color = []color.RGBA{
+	logoColor = []color.RGBA{
 		color.RGBA{0x00, 0x00, 0x91, 0xff},
 		color.RGBA{0x80, 0x80, 0x80, 0xff},
 		color.RGBA{0xe1, 0x00, 0x0f, 0xff},

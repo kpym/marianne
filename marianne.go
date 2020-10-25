@@ -121,7 +121,7 @@ func draw(ctx *canvas.Context, institution, direction string) {
 	// affiche de la Marianne
 	for i := 0; i < 3; i++ {
 		p, _ := canvas.ParseSVG(logo[i])
-		ctx.SetFillColor(logo_color[i])
+		ctx.SetFillColor(logoColor[i])
 		ctx.DrawPath(0, 0, p)
 	}
 
@@ -160,7 +160,7 @@ func onWhite(c *canvas.Canvas) *canvas.Canvas {
 	return cn
 }
 
-// les 16 couleurs du logo pour PNG et GIF (non utilisé pour le moment)
+// MariannePalette16 contient les 16 couleurs du logo pour PNG et GIF (non utilisé pour le moment)
 var MariannePalette16 = color.Palette{
 	color.RGBA{0x0c, 0x0c, 0x0c, 0xff},
 	color.RGBA{0xff, 0xff, 0xff, 0xff},
@@ -180,7 +180,7 @@ var MariannePalette16 = color.Palette{
 	color.RGBA{0xfa, 0xfa, 0xfa, 0xff},
 }
 
-// les 8 couleurs du logo pour PNG et GIF
+// MariannePalette8 contient les 8 couleurs du logo pour PNG et GIF
 var MariannePalette8 = color.Palette{
 	color.NRGBA{0xff, 0xff, 0xff, 0xff}, // blanc
 	color.NRGBA{0x05, 0x05, 0x05, 0xff}, // noir
@@ -192,14 +192,16 @@ var MariannePalette8 = color.Palette{
 	color.NRGBA{0xea, 0x65, 0x67, 0xff}, // rouge pale
 }
 
+// MarianneQuantizer est un type abstrait qui satisfait l'intérface canvas.Quantizer
 type MarianneQuantizer struct {
 }
 
+// Quantize renvoie la color.Palette pour l'encodage en PNG et GIF
 func (q *MarianneQuantizer) Quantize(p color.Palette, m image.Image) color.Palette {
 	return MariannePalette8
 }
 
-// transforme les chemins du canevas en image 8 ou 16 couleurs
+// CanvasToIndexedImg transforme les chemins du canevas en image de 8 ou 16 couleurs
 func CanvasToIndexedImg(c *canvas.Canvas, h int, p color.Palette) image.Image {
 	img := image.NewPaletted(image.Rect(0, 0, int(c.W*float64(h)/c.H+0.5), h), p)
 	c.Render(rasterizer.New(img, canvas.DPMM(float64(h)/c.H)))
@@ -289,7 +291,7 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 
 }
 
-// Affiche l'aide d'utilisation
+// Aide affiche l'aide d'utilisation
 // C'est un peut plus compliqué que ce que ça devrait être
 // car on doit remplacer "default" avec "par défaut"
 // voir : https://github.com/golang/go/issues/42124
@@ -301,7 +303,9 @@ func Aide() {
 	fmt.Fprintf(out, "\n")
 }
 
-func main() {
+// SetParameters récupération des paramètre à partir de la ligne de commande, puis
+// retourne `formatstr` qui contient la liste des format sous la forme "svg,png..."
+func SetParameters() (formatstr string) {
 	// déclare les flags
 	flag.StringVarP(&nom, "nom-du-logo", "o", "logo", "Le nom du logo = le début des noms des fichiers générés.")
 	flag.StringVarP(&institution, "institution", "i", "RÉPUBLIQUE\\FRANÇAISE", "Le nom du ministère, ambassade...")
@@ -314,15 +318,18 @@ func main() {
 	flag.StringVar(&eol, "eol", "\\", "Le passage à la ligne, en plus du EOL standard.")
 	flag.BoolVarP(&silence, "silence", "q", false, "N'imprime rien.")
 	flag.BoolVarP(&aide, "aide", "h", false, "Imprime ce message d'aide.")
-	// Message d'aide
+	// garde l'ordre des paramètres dans l'aide
 	flag.CommandLine.SortFlags = false
+	// installe la traduction des messages en français
 	flag.CommandLine.SetOutput(FrenchTranslator{flag.CommandLine.Output()})
+	// le message d'aide
 	flag.Usage = Aide
+	// en cas d'erreur ne pas afficher l'erreur une deuxième fois
 	flag.CommandLine.Init("marianne", flag.ContinueOnError)
 
 	// récupère les flags
 	err = flag.CommandLine.Parse(os.Args[1:])
-	// affiche l'aide si demandé
+	// affiche l'aide si demandé ou si erreur de paramètre
 	if aide || err != nil {
 		flag.Usage()
 		if err != nil {
@@ -337,11 +344,18 @@ func main() {
 		avecMarges = true
 	}
 	// normalisation des formats
-	var formatstr = strings.ToLower(strings.Join(formats, ","))
+	formatstr = strings.ToLower(strings.Join(formats, ","))
 	// silence ?
 	if silence {
 		log = func(msg ...interface{}) {}
 	}
+
+	return
+}
+
+func main() {
+	// récpère les paramètres de l'application
+	var formatstr = SetParameters()
 
 	// le canevas et le contexte sur lesquels on va dessiner
 	c := canvas.New(1, 1) // la taille sera ajustée après avec Fit()
