@@ -310,8 +310,8 @@ func SetParameters() (formatstr string) {
 	flag.StringVarP(&nom, "nom-du-logo", "o", "logo", "Le nom du logo = le début des noms des fichiers générés.")
 	flag.StringVarP(&institution, "institution", "i", "RÉPUBLIQUE\\FRANÇAISE", "Le nom du ministère, ambassade...")
 	flag.StringVarP(&direction, "direction", "d", "", "Intitulé de direction, service ou délégation interministérielles.")
-	flag.StringSliceVarP(&formats, "format", "f", []string{"SVG"}, "Le(s) format(s) parmi SVG, PDF, EPS, PNG, GIF et JPG.")
-	flag.IntSliceVarP(&hauteurs, "hauteur", "t", []int{100, 300, 700}, "La (ou les) hauteur(s) pour les logos en PNG, GIF et JPG.")
+	flag.StringSliceVarP(&formats, "format", "f", nil, "Le(s) format(s) parmi SVG, PDF, EPS, PNG, GIF et JPG. (par défaut SVG, ou PNG pour signature)")
+	flag.IntSliceVarP(&hauteurs, "hauteur", "t", nil, "La (ou les) hauteur(s) pour les logos en PNG, GIF et JPG. (par défaut 700, ou 100 pour signature)")
 	flag.BoolVarP(&avecMarges, "avec-marges", "M", false, "Avec zone de protection autour du logo. Ce paramètre est compatible avec -sans-marges.")
 	flag.BoolVarP(&sansMarges, "sans-marges", "m", false, "Sans zone de protection autour du logo ('_szp' est rajouté aux noms des fichiers).")
 	flag.BoolVarP(&pourSignature, "pour-signature", "g", false, "Le logo est destiné à une signature mail.")
@@ -339,10 +339,34 @@ func SetParameters() (formatstr string) {
 			os.Exit(0)
 		}
 	}
+
 	// au moins une des versions doit être présente (avec marges par défaut)
-	if !sansMarges {
-		avecMarges = true
+	if !sansMarges && !avecMarges {
+		if pourSignature {
+			sansMarges = true
+		} else {
+			avecMarges = true
+		}
 	}
+
+	// le format par défaut
+	if formats == nil {
+		if pourSignature {
+			formats = []string{"PNG"}
+		} else {
+			formats = []string{"SVG"}
+		}
+	}
+
+	// la hauteur par défaut
+	if hauteurs == nil {
+		if pourSignature {
+			hauteurs = []int{100}
+		} else {
+			hauteurs = []int{700}
+		}
+	}
+
 	// normalisation des formats
 	formatstr = strings.ToLower(strings.Join(formats, ","))
 	// silence ?

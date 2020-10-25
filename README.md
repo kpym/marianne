@@ -36,8 +36,8 @@ Paramètres disponibles:
   -o, --nom-du-logo          Le nom du logo = le début des noms des fichiers générés. (par défaut "logo")
   -i, --institution          Le nom du ministère, ambassade... (par défaut "RÉPUBLIQUE\\FRANÇAISE")
   -d, --direction            Intitulé de direction, service ou délégation interministérielles.
-  -f, --format               Le(s) format(s) parmi SVG, PDF, EPS, PNG, GIF et JPG. (par défaut [SVG])
-  -t, --hauteur              La (ou les) hauteur(s) pour les logos en PNG, GIF et JPG. (par défaut [100,300,700])
+  -f, --format               Le(s) format(s) parmi SVG, PDF, EPS, PNG, GIF et JPG. (par défaut SVG, ou PNG pour signature)
+  -t, --hauteur              La (ou les) hauteur(s) pour les logos en PNG, GIF et JPG. (par défaut 700, ou 100 pour signature)
   -M, --avec-marges          Avec zone de protection autour du logo. Ce paramètre est compatible avec -sans-marges.
   -m, --sans-marges          Sans zone de protection autour du logo ('_szp' est rajouté aux noms des fichiers).
   -g, --pour-signature       Le logo est destiné à une signature mail.
