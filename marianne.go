@@ -24,6 +24,8 @@ import (
 	"github.com/tdewolff/canvas/pdf"
 	"github.com/tdewolff/canvas/rasterizer"
 	"github.com/tdewolff/canvas/svg"
+	"github.com/tdewolff/minify/v2"
+	minsvg "github.com/tdewolff/minify/v2/svg"
 )
 
 // quelques variables globales
@@ -354,8 +356,17 @@ func writeImages(c *canvas.Canvas, zp, formats string) {
 		buf = reWidth.ReplaceAll(buf, []byte{})
 		reHeight := regexp.MustCompile(`(?m)(height\s*=\s*\"[^"]*\"\s*)`)
 		buf = reHeight.ReplaceAll(buf, []byte{})
+		// suppression de la partie fractale
+		reNumbers := regexp.MustCompile(`(?m)([ MZLHVCSQTA+-]\d*)\.\d+`)
+		buf = reNumbers.ReplaceAll(buf, []byte("$1"))
+		// compression du SVG (réécriture en coordonnées relatives)
+		memoryFile.Reset()
+		mediatype := "image/svg+xml"
+		m := minify.New()
+		m.AddFunc(mediatype, minsvg.Minify)
+		check(m.Minify(mediatype, memoryFile, bytes.NewReader(buf)))
 		// et on enregistre finalement
-		err = ioutil.WriteFile(name, buf, 0644)
+		err = ioutil.WriteFile(name, memoryFile.Bytes(), 0644)
 		check(err)
 		log("SVG fait.\n")
 	}
