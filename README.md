@@ -42,9 +42,10 @@ Paramètres disponibles:
   -m, --sans-marges          Sans zone de protection autour du logo ('_szp' est rajouté aux noms des fichiers).
   -g, --pour-signature       Le logo est destiné à une signature mail.
       --eol                  Le passage à la ligne, en plus du EOL standard. (par défaut "\\")
+      --qualite-jpg          La qualité [1-100] des jpeg. (par défaut 100)
+      --seize-couleurs       Enregistre les PNG et les GIF en 16 couleurs, sinon c'est en 8.
   -q, --silence              N'imprime rien.
   -h, --aide                 Imprime ce message d'aide.
-
 ```
 
 ### Exemple

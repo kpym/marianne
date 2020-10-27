@@ -11,10 +11,12 @@ type trad struct {
 }
 
 var traductions = []trad{
+	{" (default [])", ""},
 	{"default", "par défaut"},
-	{"strings", "       "},
-	{"string", "      "},
-	{"ints", "    "},
+	{" strings ", "         "},
+	{" string ", "        "},
+	{" uints ", "       "},
+	{" int ", "     "},
 	{"bad flag syntax:", "mauvaise syntaxe du paramètre :"},
 	{"unknown flag:", "paramètre inconnu :"},
 	{"unknown shorthand flag:", "paramètre court inconnu :"},
